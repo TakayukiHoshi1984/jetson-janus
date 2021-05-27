@@ -21,7 +21,10 @@ RUN apt-get install git-core libjansson-dev \
 	ninja-build \
 	libogg-dev \
 	pkg-config \
-	libmicrohttpd-dev -y
+	libmicrohttpd-dev \
+	nginx \
+	ssl-cert \
+	nano -y
 # install meson
 RUN pip3 install meson
 # install libnice
@@ -46,13 +49,19 @@ RUN git clone https://github.com/warmcat/libwebsockets.git /libwebsockets \
 	&& cmake -DCMAKE_INSTALL_PREFIX:PATH=/usr -DCMAKE_C_FLAGS="-fpic" .. \
  	&& make \
    	&& make install
+# install datachannels
+RUN git clone https://github.com/sctplab/usrsctp \
+	&& cd usrsctp \
+	&& ./bootstrap \
+	&& ./configure --prefix=/usr --disable-programs --disable-inet --disable-inet6 \
+	&& make && make install
 # make janus-gateway
 RUN git clone https://github.com/meetecho/janus-gateway.git ${BUILD_SRC} \
 	&& mv /libwebsockets ${BUILD_SRC}
 RUN cd ${BUILD_SRC} \
 	&& ./autogen.sh \
 	&& ./configure --prefix=/janus \
-	--enable-http --disable-websockets --disable-data-channels --disable-rabbitmq --disable-mqt --disable-all-handlers \
+	--enable-http --disable-rabbitmq --disable-mqt --disable-all-handlers \
  	&& make \
  	&& make install
 # clean up
@@ -62,6 +71,8 @@ RUN chmod +x /clean.sh
 RUN chmod +x /config.sh
 RUN /clean.sh
 ADD config/janus.plugin.streaming.jcfg /janus.plugin.streaming.jcfg
+ADD config/janus.transport.http.jcfg /janus/etc/janus/janus.transport.http.jcfg
+ADD config/default /etc/nginx/sites-available/default
 RUN /config.sh
 # API PORT
 EXPOSE 8088
@@ -72,6 +83,8 @@ EXPOSE 8188
 EXPOSE 8080
 # run janus
 ARG LD_LIBRARY_PATH=/usr/lib
-ADD scripts/run.sh /run.sh
-RUN chmod +x /run.sh
+RUN cp -a /janus/html/* /var/www/html
+RUN make-ssl-cert generate-default-snakeoil
+RUN nginx
+
 
