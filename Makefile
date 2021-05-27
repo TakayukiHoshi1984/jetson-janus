@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 build:
-	sudo docker build -t janus-gateway ./
+	sudo docker build -t janus-gateway ./ --no-cache
 test: 
 	sudo docker run --name=janus-gateway --env-file=.env --network="host" -p 8088:8088 -p 8089:8089 -p 8188:8188  -p 8080:8080 -it janus-gateway /bin/bash
 camera:

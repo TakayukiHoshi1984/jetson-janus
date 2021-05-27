@@ -61,7 +61,7 @@ RUN git clone https://github.com/meetecho/janus-gateway.git ${BUILD_SRC} \
 RUN cd ${BUILD_SRC} \
 	&& ./autogen.sh \
 	&& ./configure --prefix=/janus \
-	--enable-http --disable-rabbitmq --disable-mqt --disable-all-handlers \
+	--enable-http --enable-websockets --enable-data-channels --disable-rabbitmq --disable-mqt --disable-all-handlers \
  	&& make \
  	&& make install
 # clean up
@@ -85,6 +85,7 @@ EXPOSE 8080
 ARG LD_LIBRARY_PATH=/usr/lib
 RUN cp -a /janus/html/* /var/www/html
 RUN make-ssl-cert generate-default-snakeoil
-RUN nginx
+ADD scripts/run.sh /run.sh
+RUN chmod +x /run.sh
 
 
